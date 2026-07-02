@@ -11,6 +11,18 @@ namespace ApexBetX.Controllers
             return View();
         }
 
+        // New About page
+        public IActionResult About()
+        {
+            return View();
+        }
+
+        // New Contact page
+        public IActionResult Contact()
+        {
+            return View();
+        }
+
         public IActionResult Privacy()
         {
             return View();
@@ -19,7 +31,10 @@ namespace ApexBetX.Controllers
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            return View(new ErrorViewModel
+            {
+                RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier
+            });
         }
     }
 }
