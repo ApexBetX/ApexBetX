@@ -1,4 +1,5 @@
 using ApexBetX.Data;
+using ApexBetX.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace ApexBetX
@@ -14,6 +15,9 @@ namespace ApexBetX
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(
             builder.Configuration.GetConnectionString("DefaultConnection")));
+            builder.Services.AddScoped<UserService>();
+            builder.Services.AddScoped<AccountService>();
+            builder.Services.AddScoped<TransactionService>();
 
             var app = builder.Build();
 

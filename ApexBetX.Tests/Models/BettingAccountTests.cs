@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using Xunit;
 
-namespace ApexBetX.Tests
+namespace ApexBetX.Tests.Models
 {
     public class BettingAccountTests
     {
