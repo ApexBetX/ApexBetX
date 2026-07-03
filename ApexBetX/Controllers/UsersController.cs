@@ -1,4 +1,5 @@
 ﻿using ApexBetX.Data;
+using ApexBetX.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,13 +14,39 @@ namespace ApexBetX.Controllers
             _context = context;
         }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? searchTerm)
         {
-            var users = await _context.Users
-                .OrderBy(u => u.Surname)
-                .ToListAsync();
+            try
+            {
+                ViewBag.SearchTerm = searchTerm;
 
-            return View(users);
+                var users = _context.Users
+                    .Include(u => u.BettingAccounts)
+                    .AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(searchTerm))
+                {
+                    users = users.Where(u =>
+                        u.IDNumber.Contains(searchTerm) ||
+                        u.Surname.Contains(searchTerm) ||
+                        u.BettingAccounts.Any(a => a.AccountNumber.Contains(searchTerm)));
+                }
+
+                var result = await users
+                    .OrderBy(u => u.Surname)
+                    .ToListAsync();
+
+                return View(result);
+            }
+            catch (Exception ex)
+            {
+                // Log the error (optional)
+                // _logger.LogError(ex, "An error occurred while retrieving users.");
+
+                TempData["Error"] = "An error occurred while retrieving users. Please try again.";
+
+                return View(new List<User>());
+            }
         }
 
         public IActionResult Details(int id)
