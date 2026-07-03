@@ -2,11 +2,111 @@
     ViewData["Title"] = "Contact";
 }
 
-<div class="container mt-5">
-    <h1>Contact Us</h1>
-    <hr />
+<div class="container section">
 
-    <p><strong>Email:</strong> support@apexbetx.co.za</p>
-    <p><strong>Phone:</strong> +27 21 555 1234</p>
-    <p><strong>Address:</strong> Cape Town, South Africa</p>
+    <!-- Header -->
+    <div class="card p-5 text-center">
+        <h1 class="page-title">Contact ApexBetX</h1>
+        <hr />
+
+        <p class="lead">
+            We'd love to hear from you! Whether you have a question,
+            need assistance, or want to provide feedback, our team is here to help.
+        </p>
+    </div>
+
+    <div class="row mt-5">
+
+        <!-- Contact Information -->
+        <div class="col-lg-5">
+
+            <div class="card p-4 h-100">
+
+                <h3>Contact Information</h3>
+                <hr />
+
+                <p>
+                    <strong>Email:</strong><br />
+                    <a href="mailto:apexbetx@gmail.com">
+                        apexbetx@gmail.com
+                    </a>
+                </p>
+
+                <p>
+                    <strong>Phone:</strong><br />
+                    <a href="tel:+27215551234">
+                        +27 21 555 1234
+                    </a>
+                </p>
+
+                <p>
+                    <strong>Address:</strong><br />
+                    123 Betting Street<br />
+                    Cape Town, 8001<br />
+                    South Africa
+                </p>
+
+                <hr />
+
+                <h4>Follow Us</h4>
+
+                <p>
+                    <a href="https://facebook.com" target="_blank">Facebook</a> |
+                    <a href="https://instagram.com" target="_blank">Instagram</a> |
+                    <a href="https://x.com" target="_blank">X (Twitter)</a> |
+                    <a href="https://linkedin.com" target="_blank">LinkedIn</a>
+                </p>
+
+            </div>
+
+        </div>
+
+        <!-- Contact Form -->
+        <div class="col-lg-7">
+
+            <div class="card p-4">
+
+                <h3>Send Us a Message</h3>
+                <hr />
+
+                <form>
+                    <div class="mb-3">
+                        <label class="form-label">Full Name</label>
+                        <input type="text"
+                               class="form-control"
+                               placeholder="Enter your full name" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Email Address</label>
+                        <input type="email"
+                               class="form-control"
+                               placeholder="Enter your email address" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Subject</label>
+                        <input type="text"
+                               class="form-control"
+                               placeholder="Enter subject" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Message</label>
+                        <textarea class="form-control"
+                                  rows="5"
+                                  placeholder="Type your message here..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        Send Message
+                    </button>
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
 </div>
