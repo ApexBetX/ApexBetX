@@ -1,8 +1,73 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Home";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container mt-5">
+
+    <div class="card border-0 shadow-lg overflow-hidden">
+
+        <div class="row g-0 align-items-center">
+
+            <div class="col-lg-6 p-5">
+                <h1 class="display-3 fw-bold">
+                    Welcome to
+                    <span class="text-warning">ApexBetX</span>
+                </h1>
+                <p class="lead mt-4">
+                    ApexBetX is a secure betting account management system
+                    designed to help administrators manage users,
+                    betting accounts and transactions efficiently.
+                </p>
+                <a asp-controller="Users"
+                   asp-action="Index"
+                   class="btn btn-primary btn-lg mt-3">
+                    Manage Users
+                </a>
+            </div>
+
+            <div class="col-lg-6">
+                <img src="~/images/ApexBetX_hero.png"
+                     class="img-fluid hero-image"
+                     alt="ApexBetX Hero" />
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-md-4">
+
+            <div class="card feature-card p-4 h-100">
+                <h3>Users</h3>
+                <p>
+                    Create, update and manage betting system users.
+                </p>
+            </div>
+
+        </div>
+
+        <div class="col-md-4">
+
+            <div class="card feature-card p-4 h-100">
+                <h3>Accounts</h3>
+                <p>
+                    Manage betting accounts and monitor account status.
+                </p>
+            </div>
+
+        </div>
+
+        <div class="col-md-4">
+
+            <div class="card feature-card p-4 h-100">
+                <h3>Transactions</h3>
+                <p>
+                    View and manage betting transactions with automatic balance updates.
+                </p>
+            </div>
+
+        </div>
+
+    </div>
+
 </div>

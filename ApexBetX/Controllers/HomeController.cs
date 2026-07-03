@@ -11,13 +11,11 @@ namespace ApexBetX.Controllers
             return View();
         }
 
-        // New About page
         public IActionResult About()
         {
             return View();
         }
 
-        // New Contact page
         public IActionResult Contact()
         {
             return View();
