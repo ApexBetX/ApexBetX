@@ -28,7 +28,7 @@ namespace ApexBetX.Tests.Services
                 BettingAccounts = new List<BettingAccount>()
             };
 
-            Assert.True(service.CanDeleteUser(user));
+            Assert.True(service.CanArchiveUser(user));
         }
 
         [Fact]
@@ -45,7 +45,7 @@ namespace ApexBetX.Tests.Services
                 }
             };
 
-            Assert.False(service.CanDeleteUser(user));
+            Assert.False(service.CanArchiveUser(user));
         }
 
         [Fact]
@@ -63,7 +63,7 @@ namespace ApexBetX.Tests.Services
                 }
             };
 
-            Assert.True(service.CanDeleteUser(user));
+            Assert.True(service.CanArchiveUser(user));
         }
 
         [Fact]
@@ -161,5 +161,6 @@ namespace ApexBetX.Tests.Services
 
             Assert.False(result);
         }
+       
     }
 }

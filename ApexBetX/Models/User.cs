@@ -36,5 +36,6 @@ namespace ApexBetX.Models
         public string? Phone { get; set; }
 
         public ICollection<BettingAccount> BettingAccounts { get; set; } = new List<BettingAccount>();
+        public bool IsArchived { get; set; } = false;
     }
 }
