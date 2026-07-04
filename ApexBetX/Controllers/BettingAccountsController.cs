@@ -88,5 +88,29 @@ namespace ApexBetX.Controllers
                 return View(account);
             }
         }
+
+        public async Task<IActionResult> Details(int id)
+        {
+            try
+            {
+                var account = await _context.BettingAccounts
+                    .Include(a => a.User)
+                    .Include(a => a.Transactions)
+                    .FirstOrDefaultAsync(a => a.AccountId == id);
+
+                if (account == null)
+                {
+                    TempData["Error"] = "Betting account not found.";
+                    return RedirectToAction("Index", "Users");
+                }
+
+                return View(account);
+            }
+            catch (Exception)
+            {
+                TempData["Error"] = "An error occurred while loading account details.";
+                return RedirectToAction("Index", "Users");
+            }
+        }
     }
 }
