@@ -1,5 +1,6 @@
 ﻿using ApexBetX.Data;
 using ApexBetX.Models;
+using ApexBetX.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,10 +9,12 @@ namespace ApexBetX.Controllers
     public class UsersController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly UserService _userService;
 
-        public UsersController(ApplicationDbContext context)
+        public UsersController(ApplicationDbContext context, UserService userService)
         {
             _context = context;
+            _userService = userService;
         }
         public async Task<IActionResult> Index(string? searchTerm)
         {
@@ -49,14 +52,17 @@ namespace ApexBetX.Controllers
         {
             return View();
         }
-
-        // POST: Users/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(User user)
         {
             try
             {
+                if (await _userService.IDNumberExistsAsync(user.IDNumber!))
+                {
+                    ModelState.AddModelError("IDNumber", "A user with this ID Number already exists.");
+                }
+
                 if (ModelState.IsValid)
                 {
                     _context.Users.Add(user);
