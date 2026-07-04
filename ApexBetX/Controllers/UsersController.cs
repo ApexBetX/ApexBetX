@@ -16,11 +16,14 @@ namespace ApexBetX.Controllers
             _context = context;
             _userService = userService;
         }
-        public async Task<IActionResult> Index(string? searchTerm)
+        public async Task<IActionResult> Index(string? searchTerm, int page = 1)
         {
             try
             {
+                int pageSize = 10;
+
                 ViewBag.SearchTerm = searchTerm;
+                ViewBag.CurrentPage = page;
 
                 var users = _context.Users
                     .Include(u => u.BettingAccounts)
@@ -30,13 +33,20 @@ namespace ApexBetX.Controllers
                 if (!string.IsNullOrWhiteSpace(searchTerm))
                 {
                     users = users.Where(u =>
-                        u.IDNumber.Contains(searchTerm) ||
-                        u.Surname.Contains(searchTerm) ||
-                        u.BettingAccounts.Any(a => a.AccountNumber.Contains(searchTerm)));
+                        u.IDNumber!.Contains(searchTerm) ||
+                        u.Surname!.Contains(searchTerm) ||
+                        u.BettingAccounts.Any(a => a.AccountNumber!.Contains(searchTerm)));
                 }
+
+                int totalUsers = await users.CountAsync();
+                int totalPages = (int)Math.Ceiling(totalUsers / (double)pageSize);
+
+                ViewBag.TotalPages = totalPages;
 
                 var result = await users
                     .OrderBy(u => u.Surname)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
                     .ToListAsync();
 
                 return View(result);
