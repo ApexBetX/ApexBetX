@@ -112,5 +112,69 @@ namespace ApexBetX.Controllers
                 return RedirectToAction("Index", "Users");
             }
         }
+
+        public async Task<IActionResult> Edit(int id)
+        {
+            try
+            {
+                var account = await _context.BettingAccounts.FindAsync(id);
+
+                if (account == null)
+                {
+                    TempData["Error"] = "Betting account not found.";
+                    return RedirectToAction("Index", "Users");
+                }
+
+                return View(account);
+            }
+            catch (Exception)
+            {
+                TempData["Error"] = "An error occurred while loading the account.";
+                return RedirectToAction("Index", "Users");
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, BettingAccount model)
+        {
+            try
+            {
+                if (id != model.AccountId)
+                {
+                    return NotFound();
+                }
+
+                if (ModelState.IsValid)
+                {
+                    var account = await _context.BettingAccounts.FindAsync(id);
+
+                    if (account == null)
+                    {
+                        TempData["Error"] = "Betting account not found.";
+                        return RedirectToAction("Index", "Users");
+                    }
+
+                    account.AccountNumber = model.AccountNumber;
+                    account.IsClosed = model.IsClosed;
+                    account.UserId = model.UserId;
+
+                    // Balance is NOT updated here
+
+                    await _context.SaveChangesAsync();
+
+                    TempData["Success"] = "Betting account updated successfully.";
+
+                    return RedirectToAction("Details", new { id = account.AccountId });
+                }
+
+                return View(model);
+            }
+            catch (Exception)
+            {
+                TempData["Error"] = "An error occurred while updating the account.";
+                return View(model);
+            }
+        }
     }
 }
