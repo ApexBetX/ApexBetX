@@ -1,0 +1,111 @@
+﻿@model ApexBetX.Models.BettingAccount
+
+@{
+    ViewData["Title"] = "Account Details";
+}
+
+<div class="container section">
+
+    <div class="card p-4 mb-4">
+        <h1 class="page-title">Account Details</h1>
+        <hr />
+
+        <dl class="row">
+            <dt class="col-sm-3">Account Number</dt>
+            <dd class="col-sm-9">@Model.AccountNumber</dd>
+
+            <dt class="col-sm-3">Balance</dt>
+            <dd class="col-sm-9">R @Model.Balance.ToString("N2")</dd>
+
+            <dt class="col-sm-3">Status</dt>
+            <dd class="col-sm-9">
+                @if (Model.IsClosed)
+                {
+                    <span class="badge bg-danger">Closed</span>
+                }
+                else
+                {
+                    <span class="badge bg-success">Open</span>
+                }
+            </dd>
+
+            <dt class="col-sm-3">Created Date</dt>
+            <dd class="col-sm-9">@Model.CreatedDate.ToShortDateString()</dd>
+
+            <dt class="col-sm-3">User</dt>
+            <dd class="col-sm-9">
+                @Model.User?.FirstName @Model.User?.Surname
+            </dd>
+        </dl>
+
+        <div class="d-flex gap-2">
+            <a asp-controller="Users"
+               asp-action="Details"
+               asp-route-id="@Model.UserId"
+               class="btn btn-secondary">
+                Back to User
+            </a>
+        </div>
+    </div>
+
+    <div class="card p-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="page-title">Transactions</h2>
+
+            <a asp-controller="Transactions"
+               asp-action="Create"
+               asp-route-accountId="@Model.AccountId"
+               class="btn btn-primary">
+                Add Transaction
+            </a>
+        </div>
+
+        <table class="table table-hover table-bordered align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Transaction ID</th>
+                    <th>Transaction Date</th>
+                    <th>Capture Date</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Description</th>
+                    <th class="text-center">Actions</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @if (Model.Transactions != null && Model.Transactions.Any())
+                {
+                    foreach (var transaction in Model.Transactions.OrderByDescending(t => t.TransactionDate))
+                    {
+                        <tr>
+                            <td>@transaction.TransactionId</td>
+                            <td>@transaction.TransactionDate.ToShortDateString()</td>
+                            <td>@transaction.CaptureDate.ToShortDateString()</td>
+                            <td>@transaction.TransactionType</td>
+                            <td>R @transaction.Amount.ToString("N2")</td>
+                            <td>@transaction.Description</td>
+                            <td class="text-center">
+                                <a asp-controller="Transactions"
+                                   asp-action="Edit"
+                                   asp-route-id="@transaction.TransactionId"
+                                   class="btn btn-sm btn-warning">
+                                    Edit
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">
+                            No transactions linked to this account.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+</div>
