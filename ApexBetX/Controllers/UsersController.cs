@@ -86,11 +86,63 @@ namespace ApexBetX.Controllers
             return View();
         }
 
-        public IActionResult Edit(int id)
+        // GET: Users/Edit/5
+        public async Task<IActionResult> Edit(int id)
         {
-            return View();
-        }
+            try
+            {
+                var user = await _context.Users.FindAsync(id);
 
+                if (user == null)
+                {
+                    TempData["Error"] = "User not found.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                return View(user);
+            }
+            catch (Exception)
+            {
+                TempData["Error"] = "An error occurred while loading the user.";
+                return RedirectToAction(nameof(Index));
+            }
+        }
+        // POST: Users/Edit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, User user)
+        {
+            try
+            {
+                if (id != user.UserId)
+                {
+                    TempData["Error"] = "Invalid user selected.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                if (await _userService.DuplicateIDNumberExistsAsync(user.UserId, user.IDNumber!))
+                {
+                    ModelState.AddModelError("IDNumber",
+                        "A user with this ID Number already exists.");
+                }
+
+                if (ModelState.IsValid)
+                {
+                    _context.Users.Update(user);
+                    await _context.SaveChangesAsync();
+
+                    TempData["Success"] = "User updated successfully.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                return View(user);
+            }
+            catch (Exception)
+            {
+                TempData["Error"] = "An error occurred while updating the user.";
+                return View(user);
+            }
+        }
         public IActionResult Delete(int id)
         {
             return View();

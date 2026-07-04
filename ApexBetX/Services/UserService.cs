@@ -22,5 +22,11 @@ namespace ApexBetX.Services
         {
             return await _context.Users.AnyAsync(u => u.IDNumber == idNumber);
         }
+        public async Task<bool> DuplicateIDNumberExistsAsync(int userId, string idNumber)
+        {
+            return await _context.Users
+                .AnyAsync(u => u.UserId != userId &&
+                               u.IDNumber == idNumber);
+        }
     }
 }

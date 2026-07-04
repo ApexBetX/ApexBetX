@@ -1,6 +1,7 @@
 ﻿using ApexBetX.Controllers;
 using ApexBetX.Data;
 using ApexBetX.Models;
+using ApexBetX.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -69,7 +70,8 @@ namespace ApexBetX.Tests.Controllers
         public async Task Index_Returns_View_With_All_Users_When_Search_Is_Empty()
         {
             var context = GetDbContext();
-            var controller = new UsersController(context);
+            var userService = new UserService(context);
+            var controller = new UsersController(context, userService);
 
             var result = await controller.Index(null);
 
@@ -83,7 +85,8 @@ namespace ApexBetX.Tests.Controllers
         public async Task Index_Searches_By_IDNumber()
         {
             var context = GetDbContext();
-            var controller = new UsersController(context);
+            var userService = new UserService(context);
+            var controller = new UsersController(context, userService);
 
             var result = await controller.Index("0101015009087");
 
@@ -98,7 +101,8 @@ namespace ApexBetX.Tests.Controllers
         public async Task Index_Searches_By_Surname()
         {
             var context = GetDbContext();
-            var controller = new UsersController(context);
+            var userService = new UserService(context);
+            var controller = new UsersController(context, userService);
 
             var result = await controller.Index("Smith");
 
@@ -113,7 +117,8 @@ namespace ApexBetX.Tests.Controllers
         public async Task Index_Searches_By_AccountNumber()
         {
             var context = GetDbContext();
-            var controller = new UsersController(context);
+            var userService = new UserService(context);
+            var controller = new UsersController(context, userService);
 
             var result = await controller.Index("ACC001");
 
@@ -128,7 +133,8 @@ namespace ApexBetX.Tests.Controllers
         public async Task Index_Returns_Empty_List_When_No_Search_Match()
         {
             var context = GetDbContext();
-            var controller = new UsersController(context);
+            var userService = new UserService(context);
+            var controller = new UsersController(context, userService);
 
             var result = await controller.Index("NotFound");
 
