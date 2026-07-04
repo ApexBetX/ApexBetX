@@ -24,6 +24,7 @@ namespace ApexBetX.Controllers
 
                 var users = _context.Users
                     .Include(u => u.BettingAccounts)
+                    .Where(u => !u.IsArchived)
                     .AsQueryable();
 
                 if (!string.IsNullOrWhiteSpace(searchTerm))
@@ -143,9 +144,99 @@ namespace ApexBetX.Controllers
                 return View(user);
             }
         }
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Archive(int id)
         {
-            return View();
+            try
+            {
+                var user = await _context.Users
+                    .Include(u => u.BettingAccounts)
+                    .FirstOrDefaultAsync(u => u.UserId == id);
+
+                if (user == null)
+                {
+                    TempData["Error"] = "User not found.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                return View(user);
+            }
+            catch (Exception)
+            {
+                TempData["Error"] = "An error occurred while loading the user.";
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+        [HttpPost, ActionName("Archive")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ArchiveConfirmed(int id)
+        {
+            try
+            {
+                var user = await _context.Users
+                    .Include(u => u.BettingAccounts)
+                    .FirstOrDefaultAsync(u => u.UserId == id);
+
+                if (user == null)
+                {
+                    TempData["Error"] = "User not found.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                if (!_userService.CanArchiveUser(user))
+                {
+                    TempData["Error"] = "This user cannot be archived because they have open betting accounts.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                user.IsArchived = true;
+
+                _context.Users.Update(user);
+                await _context.SaveChangesAsync();
+
+                TempData["Success"] = "User archived successfully.";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception)
+            {
+                TempData["Error"] = "An error occurred while archiving the user.";
+                return RedirectToAction(nameof(Index));
+            }
+        }
+        public async Task<IActionResult> ArchivedUsers()
+        {
+            try
+            {
+                var archivedUsers = await _context.Users
+                    .Include(u => u.BettingAccounts)
+                    .Where(u => u.IsArchived)
+                    .OrderBy(u => u.Surname)
+                    .ToListAsync();
+
+                return View(archivedUsers);
+            }
+            catch (Exception)
+            {
+                TempData["Error"] = "An error occurred while loading archived users.";
+                return RedirectToAction(nameof(Index));
+            }
+        }
+        public async Task<IActionResult> ArchiveRestore(int id)
+        {
+            var user = await _context.Users.FindAsync(id);
+
+            if (user == null)
+            {
+                TempData["Error"] = "User not found.";
+                return RedirectToAction(nameof(ArchivedUsers));
+            }
+
+            user.IsArchived = false;
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = "User restored successfully.";
+            return RedirectToAction(nameof(ArchivedUsers));
         }
     }
 }

@@ -12,7 +12,7 @@ namespace ApexBetX.Services
         {
             _context = context;
         }
-        public bool CanDeleteUser(User user)
+        public bool CanArchiveUser(User user)
         {
             return user.BettingAccounts == null ||
                    !user.BettingAccounts.Any() ||

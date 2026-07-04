@@ -4,7 +4,6 @@ using ApexBetX.Models;
 using ApexBetX.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Xunit;
 
 namespace ApexBetX.Tests.Controllers
 {

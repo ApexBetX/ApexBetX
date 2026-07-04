@@ -1,0 +1,49 @@
+﻿@model ApexBetX.Models.User
+
+@{
+    ViewData["Title"] = "Archive User";
+}
+
+<div class="container section">
+    <div class="card p-4">
+
+        <h1 class="page-title text-danger">Archive User</h1>
+        <hr />
+
+        <p class="lead">
+            Are you sure you want to archive this user?
+        </p>
+
+        <dl class="row">
+            <dt class="col-sm-3">ID Number</dt>
+            <dd class="col-sm-9">@Model.IDNumber</dd>
+
+            <dt class="col-sm-3">First Name</dt>
+            <dd class="col-sm-9">@Model.FirstName</dd>
+
+            <dt class="col-sm-3">Surname</dt>
+            <dd class="col-sm-9">@Model.Surname</dd>
+
+            <dt class="col-sm-3">Email</dt>
+            <dd class="col-sm-9">@Model.Email</dd>
+
+            <dt class="col-sm-3">Phone</dt>
+            <dd class="col-sm-9">@Model.Phone</dd>
+        </dl>
+
+        <form asp-action="Archive" method="post">
+            @Html.AntiForgeryToken()
+
+            <input type="hidden" asp-for="UserId" />
+
+            <button type="submit" class="btn btn-danger">
+                Confirm Archive
+            </button>
+
+            <a asp-controller="Users" asp-action="Index" class="btn btn-secondary">
+                Cancel
+            </a>
+        </form>
+
+    </div>
+</div>
