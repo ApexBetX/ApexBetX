@@ -92,9 +92,27 @@ namespace ApexBetX.Controllers
             }
         }
 
-        public IActionResult Details(int id)
+        public async Task<IActionResult> Details(int id)
         {
-            return View();
+            try
+            {
+                var user = await _context.Users
+                    .Include(u => u.BettingAccounts)
+                    .FirstOrDefaultAsync(u => u.UserId == id && !u.IsArchived);
+
+                if (user == null)
+                {
+                    TempData["Error"] = "User not found.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                return View(user);
+            }
+            catch (Exception)
+            {
+                TempData["Error"] = "An error occurred while loading user details.";
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         // GET: Users/Edit/5

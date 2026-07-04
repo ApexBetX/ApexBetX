@@ -12,16 +12,15 @@ namespace ApexBetX.Models
         [StringLength(20, ErrorMessage = "Account Number cannot exceed 20 characters.")]
         public string? AccountNumber { get; set; }
 
-        [Range(0, 1000000000, ErrorMessage = "Balance cannot be negative.")]
-        public decimal Balance { get; set; }
+        public decimal Balance { get; set; } = 0;
 
-        public bool IsClosed { get; set; }
+        public bool IsClosed { get; set; } = false;
 
         [Required]
         [DataType(DataType.Date)]
-        public DateTime CreatedDate { get; set; }
+        public DateTime CreatedDate { get; set; } = DateTime.Now;
 
-        [Required(ErrorMessage = "A user must be selected.")]
+        [Required]
         [ForeignKey("User")]
         public int UserId { get; set; }
 
