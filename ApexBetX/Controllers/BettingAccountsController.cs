@@ -1,5 +1,6 @@
 ﻿using ApexBetX.Data;
 using ApexBetX.Models;
+using ApexBetX.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,10 +9,12 @@ namespace ApexBetX.Controllers
     public class BettingAccountsController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly AccountService _accountService;
 
-        public BettingAccountsController(ApplicationDbContext context)
+        public BettingAccountsController(ApplicationDbContext context, AccountService accountService)
         {
             _context = context;
+            _accountService = accountService;
         }
 
         // GET: BettingAccounts/Create
@@ -53,6 +56,13 @@ namespace ApexBetX.Controllers
                 if (!_context.Users.Any(u => u.UserId == account.UserId))
                 {
                     ModelState.AddModelError("", "User does not exist.");
+                }
+
+                if (await _accountService.AccountNumberExistsAsync(account.AccountNumber!))
+                {
+                    ModelState.AddModelError(
+                        "AccountNumber",
+                        "An account with this account number already exists.");
                 }
 
                 if (ModelState.IsValid)
