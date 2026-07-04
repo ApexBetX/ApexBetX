@@ -1,0 +1,81 @@
+﻿@model ApexBetX.Models.BettingAccount
+
+@{
+    ViewData["Title"] = "Create Betting Account";
+}
+
+<div class="container section">
+
+    <div class="card p-4">
+
+        <h2 class="page-title">Create Betting Account</h2>
+
+        <hr />
+
+        <form asp-action="Create">
+
+            <input type="hidden" asp-for="UserId" />
+
+            <div asp-validation-summary="ModelOnly"
+                 class="text-danger"></div>
+
+            <div class="mb-3">
+
+                <label asp-for="AccountNumber" class="form-label"></label>
+
+                <input asp-for="AccountNumber"
+                       class="form-control" />
+
+                <span asp-validation-for="AccountNumber"
+                      class="text-danger"></span>
+
+            </div>
+
+            <div class="mb-3">
+
+                <label class="form-label">Balance</label>
+
+                <input class="form-control"
+                       value="0.00"
+                       readonly />
+
+            </div>
+
+            <div class="mb-3">
+
+                <label class="form-label">Created Date</label>
+
+                <input class="form-control"
+                       value="@Model.CreatedDate.ToString("yyyy-MM-dd")"
+                       readonly />
+
+            </div>
+
+            <button type="submit"
+                    class="btn btn-primary">
+
+                Create Account
+
+            </button>
+
+            <a asp-controller="Users"
+               asp-action="Details"
+               asp-route-id="@Model.UserId"
+               class="btn btn-secondary">
+
+                Cancel
+
+            </a>
+
+        </form>
+
+    </div>
+
+</div>
+
+@section Scripts
+{
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
