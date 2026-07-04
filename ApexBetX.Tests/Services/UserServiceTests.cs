@@ -99,5 +99,67 @@ namespace ApexBetX.Tests.Services
 
             Assert.False(result);
         }
+
+        [Fact]
+        public async Task DuplicateIDNumberExistsAsync_Returns_True_When_Another_User_Has_The_Same_ID()
+        {
+            var context = GetDbContext();
+
+            context.Users.AddRange(
+                new User
+                {
+                    UserId = 1,
+                    IDNumber = "9901015009087",
+                    FirstName = "John",
+                    Surname = "Doe",
+                    Email = "john@test.com",
+                    Phone = "0711111111"
+                },
+                new User
+                {
+                    UserId = 2,
+                    IDNumber = "9801015009086",
+                    FirstName = "Jane",
+                    Surname = "Doe",
+                    Email = "jane@test.com",
+                    Phone = "0722222222"
+                });
+
+            await context.SaveChangesAsync();
+
+            var service = new UserService(context);
+
+            var result = await service.DuplicateIDNumberExistsAsync(
+                1,
+                "9801015009086");
+
+            Assert.True(result);
+        }
+
+        [Fact]
+        public async Task DuplicateIDNumberExistsAsync_Returns_False_When_User_Keeps_Their_Own_ID()
+        {
+            var context = GetDbContext();
+
+            context.Users.Add(new User
+            {
+                UserId = 1,
+                IDNumber = "9901015009087",
+                FirstName = "John",
+                Surname = "Doe",
+                Email = "john@test.com",
+                Phone = "0711111111"
+            });
+
+            await context.SaveChangesAsync();
+
+            var service = new UserService(context);
+
+            var result = await service.DuplicateIDNumberExistsAsync(
+                1,
+                "9901015009087");
+
+            Assert.False(result);
+        }
     }
 }
