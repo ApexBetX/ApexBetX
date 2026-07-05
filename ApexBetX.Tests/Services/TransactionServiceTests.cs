@@ -39,7 +39,39 @@ namespace ApexBetX.Tests.Services
             Assert.True(service.IsValidAmount(100));
         }
 
+   
+
         [Fact]
+        public void Closed_Account_Rejects_Transaction()
+        {
+            var service = new TransactionService();
+
+            var account = new BettingAccount
+            {
+                IsClosed = true
+            };
+
+            var result = service.CanAddTransaction(account);
+
+            Assert.False(result);
+        }
+
+        [Fact]
+        public void Open_Account_Accepts_Transaction()
+        {
+            var service = new TransactionService();
+
+            var account = new BettingAccount
+            {
+                IsClosed = false
+            };
+
+            var result = service.CanAddTransaction(account);
+
+            Assert.True(result);
+        }
+        [Fact]
+       
         public void Credit_Increases_Balance()
         {
             var service = new TransactionService();

@@ -1,5 +1,6 @@
 ﻿using ApexBetX.Data;
 using ApexBetX.Models;
+using ApexBetX.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,13 +9,14 @@ namespace ApexBetX.Controllers
     public class TransactionsController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly TransactionService _transactionService;
 
-        public TransactionsController(ApplicationDbContext context)
+        public TransactionsController(ApplicationDbContext context, TransactionService transactionService)
         {
             _context = context;
+            _transactionService = transactionService;
         }
 
-        // GET: Transactions/Create
         public async Task<IActionResult> Create(int accountId)
         {
             var account = await _context.BettingAccounts.FindAsync(accountId);
@@ -23,6 +25,12 @@ namespace ApexBetX.Controllers
             {
                 TempData["Error"] = "Account not found.";
                 return RedirectToAction("Index", "Users");
+            }
+
+            if (!_transactionService.CanAddTransaction(account))
+            {
+                TempData["Error"] = "Transactions cannot be added to a closed account.";
+                return RedirectToAction("Details", "BettingAccounts", new { id = accountId });
             }
 
             var transaction = new Transaction
@@ -34,16 +42,33 @@ namespace ApexBetX.Controllers
             return View(transaction);
         }
 
-        // POST: Transactions/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Transaction transaction)
         {
             try
             {
+                var account = await _context.BettingAccounts.FindAsync(transaction.AccountId);
+
+                if (account == null)
+                {
+                    ModelState.AddModelError("", "Betting account not found.");
+                }
+                else
+                {
+                    if (!_transactionService.CanAddTransaction(account))
+                        ModelState.AddModelError("", "Transactions cannot be added to a closed account.");
+
+                    if (!_transactionService.IsValidTransactionDate(transaction.TransactionDate))
+                        ModelState.AddModelError("TransactionDate", "Transaction date cannot be in the future.");
+
+                    if (!_transactionService.IsValidAmount(transaction.Amount))
+                        ModelState.AddModelError("Amount", "Transaction amount cannot be zero.");
+                }
+
                 if (ModelState.IsValid)
                 {
-                    transaction.CaptureDate = DateTime.Now;
+                    _transactionService.SetCaptureDate(transaction);
 
                     _context.Transactions.Add(transaction);
                     await _context.SaveChangesAsync();
@@ -63,7 +88,6 @@ namespace ApexBetX.Controllers
             }
         }
 
-        // GET: Transactions/Edit/5
         public async Task<IActionResult> Edit(int id)
         {
             var transaction = await _context.Transactions.FindAsync(id);
@@ -77,7 +101,6 @@ namespace ApexBetX.Controllers
             return View(transaction);
         }
 
-        // POST: Transactions/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, Transaction model)
@@ -85,27 +108,41 @@ namespace ApexBetX.Controllers
             try
             {
                 if (id != model.TransactionId)
-                {
                     return NotFound();
+
+                var transaction = await _context.Transactions.FindAsync(id);
+
+                if (transaction == null)
+                {
+                    TempData["Error"] = "Transaction not found.";
+                    return RedirectToAction("Index", "Users");
+                }
+
+                var account = await _context.BettingAccounts.FindAsync(transaction.AccountId);
+
+                if (account == null)
+                {
+                    ModelState.AddModelError("", "Betting account not found.");
+                }
+                else
+                {
+                    if (!_transactionService.CanAddTransaction(account))
+                        ModelState.AddModelError("", "Transactions cannot be edited on a closed account.");
+
+                    if (!_transactionService.IsValidTransactionDate(model.TransactionDate))
+                        ModelState.AddModelError("TransactionDate", "Transaction date cannot be in the future.");
+
+                    if (!_transactionService.IsValidAmount(model.Amount))
+                        ModelState.AddModelError("Amount", "Transaction amount cannot be zero.");
                 }
 
                 if (ModelState.IsValid)
                 {
-                    var transaction = await _context.Transactions.FindAsync(id);
-
-                    if (transaction == null)
-                    {
-                        TempData["Error"] = "Transaction not found.";
-                        return RedirectToAction("Index", "Users");
-                    }
-
                     transaction.TransactionDate = model.TransactionDate;
                     transaction.Amount = model.Amount;
                     transaction.TransactionType = model.TransactionType;
                     transaction.Description = model.Description;
-
-                    // Capture date is system-generated
-                    transaction.CaptureDate = DateTime.Now;
+                    _transactionService.SetCaptureDate(transaction);
 
                     await _context.SaveChangesAsync();
 
