@@ -16,6 +16,8 @@ namespace ApexBetX.Data
 
         public DbSet<Transaction> Transactions { get; set; }
 
+        public DbSet<TransactionHistory> TransactionHistories { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
