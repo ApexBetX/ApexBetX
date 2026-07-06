@@ -8,13 +8,32 @@
     <div class="card p-4">
 
         <h1 class="page-title">Edit Transaction</h1>
+        
         <hr />
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger">
+                @TempData["Error"]
+            </div>
+        }
 
-        <form asp-action="Edit" method="post">
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert alert-success">
+                @TempData["Success"]
+            </div>
+        }
+        <div class="alert alert-warning">
+            Editing this transaction will save the previous values in transaction history
+            and recalculate the account balance correctly.
+        </div>
+
+        <form asp-action="Edit" asp-route-id="@Model.TransactionId" method="post">
             @Html.AntiForgeryToken()
 
             <input type="hidden" asp-for="TransactionId" />
             <input type="hidden" asp-for="AccountId" />
+            <input type="hidden" asp-for="CaptureDate" />
 
             <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
@@ -28,8 +47,8 @@
                 <label asp-for="TransactionType" class="form-label"></label>
                 <select asp-for="TransactionType" class="form-select">
                     <option value="">-- Select Type --</option>
-                    <option value="Credit">Credit</option>
-                    <option value="Debit">Debit</option>
+                    <option value="Deposit">Deposit</option>
+                    <option value="Withdrawal">withdrawal</option>
                 </select>
                 <span asp-validation-for="TransactionType" class="text-danger"></span>
             </div>
@@ -45,8 +64,6 @@
                 <textarea asp-for="Description" class="form-control" rows="4"></textarea>
                 <span asp-validation-for="Description" class="text-danger"></span>
             </div>
-
-            <!-- CaptureDate is NOT editable. It is updated by the system in the controller. -->
 
             <button type="submit" class="btn btn-primary">
                 Save Changes

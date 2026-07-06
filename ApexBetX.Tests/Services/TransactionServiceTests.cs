@@ -39,7 +39,7 @@ namespace ApexBetX.Tests.Services
             Assert.True(service.IsValidAmount(100));
         }
 
-   
+
 
         [Fact]
         public void Closed_Account_Rejects_Transaction()
@@ -71,7 +71,7 @@ namespace ApexBetX.Tests.Services
             Assert.True(result);
         }
         [Fact]
-       
+
         public void Credit_Increases_Balance()
         {
             var service = new TransactionService();
@@ -101,6 +101,31 @@ namespace ApexBetX.Tests.Services
             var result = service.CalculateNewBalance(100, transaction);
 
             Assert.Equal(70, result);
+        }
+
+        [Fact]
+        public void Editing_Credit_Transaction_Updates_Balance_Without_Double_Counting()
+        {
+            var service = new TransactionService();
+
+            var currentBalance = 100m;
+
+            var oldTransaction = new Transaction
+            {
+                Amount = 100m,
+                TransactionType = "Credit"
+            };
+
+            var newTransaction = new Transaction
+            {
+                Amount = 150m,
+                TransactionType = "Credit"
+            };
+
+            var balanceAfterReverse = service.ReverseTransaction(currentBalance, oldTransaction);
+            var finalBalance = service.ApplyTransaction(balanceAfterReverse, newTransaction);
+
+            Assert.Equal(150m, finalBalance);
         }
     }
 }

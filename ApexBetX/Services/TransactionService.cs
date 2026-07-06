@@ -21,10 +21,10 @@ namespace ApexBetX.Services
 
         public decimal CalculateNewBalance(decimal currentBalance, Transaction transaction)
         {
-            if (transaction.TransactionType == "Credit")
+            if (transaction.TransactionType == "Deposit")
                 return currentBalance + transaction.Amount;
 
-            if (transaction.TransactionType == "Debit")
+            if (transaction.TransactionType == "Withdrawal")
                 return currentBalance - transaction.Amount;
 
             return currentBalance;
@@ -33,6 +33,27 @@ namespace ApexBetX.Services
         public void SetCaptureDate(Transaction transaction)
         {
             transaction.CaptureDate = DateTime.Now;
+        }
+        public decimal ReverseTransaction(decimal currentBalance, Transaction oldTransaction)
+        {
+            if (oldTransaction.TransactionType == "Deposit")
+                return currentBalance - oldTransaction.Amount;
+
+            if (oldTransaction.TransactionType == "Withdrawal")
+                return currentBalance + oldTransaction.Amount;
+
+            return currentBalance;
+        }
+
+        public decimal ApplyTransaction(decimal currentBalance, Transaction newTransaction)
+        {
+            if (newTransaction.TransactionType == "Deposit")
+                return currentBalance + newTransaction.Amount;
+
+            if (newTransaction.TransactionType == "Withdrawal")
+                return currentBalance - newTransaction.Amount;
+
+            return currentBalance;
         }
     }
 }
