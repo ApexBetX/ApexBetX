@@ -70,6 +70,11 @@ namespace ApexBetX.Controllers
                 {
                     _transactionService.SetCaptureDate(transaction);
 
+                    account!.Balance = _transactionService.CalculateNewBalance(
+                       account.Balance,
+                       transaction
+                   );
+
                     _context.Transactions.Add(transaction);
                     await _context.SaveChangesAsync();
 

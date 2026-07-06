@@ -155,6 +155,16 @@ namespace ApexBetX.Controllers
                         return RedirectToAction("Index", "Users");
                     }
 
+                    if (model.IsClosed && !_accountService.CanCloseAccount(account))
+                    {
+                        ModelState.AddModelError(
+                            "IsClosed",
+                            "An account can only be closed when the balance is zero.");
+
+                        return View(model);
+                    }
+
+
                     account.AccountNumber = model.AccountNumber;
                     account.IsClosed = model.IsClosed;
                     account.UserId = model.UserId;
