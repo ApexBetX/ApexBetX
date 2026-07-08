@@ -1,0 +1,117 @@
+﻿@model ApexBetX.Models.Account
+
+@{
+    ViewData["Title"] = "My Account";
+}
+
+<div class="container section">
+
+    <div class="card p-4 mb-4">
+
+        <h1 class="page-title">My Account</h1>
+
+        <hr />
+
+        <dl class="row">
+
+            <dt class="col-sm-3">Name</dt>
+            <dd class="col-sm-9">
+                @Model.User?.FirstName @Model.User?.Surname
+            </dd>
+
+            <dt class="col-sm-3">Email</dt>
+            <dd class="col-sm-9">
+                @Model.Email
+            </dd>
+
+            <dt class="col-sm-3">Role</dt>
+            <dd class="col-sm-9">
+                @Model.Role
+            </dd>
+
+        </dl>
+
+    </div>
+
+
+    <div class="card p-4">
+
+        <h2 class="page-title">My Betting Accounts</h2>
+
+        <hr />
+
+        @if (Model.User?.BettingAccounts != null &&
+             Model.User.BettingAccounts.Any())
+        {
+            <table class="table table-hover table-bordered align-middle">
+
+                <thead class="table-dark">
+                    <tr>
+                        <th>Account Number</th>
+                        <th>Balance</th>
+                        <th>Status</th>
+                        <th>Transactions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    @foreach (var bettingAccount in Model.User.BettingAccounts)
+                    {
+                        <tr>
+
+                            <td>
+                                @bettingAccount.AccountNumber
+                            </td>
+
+                            <td>
+                                R @bettingAccount.Balance.ToString("N2")
+                            </td>
+
+                            <td>
+
+                                @if (bettingAccount.IsClosed)
+                                {
+                                    <span class="badge bg-danger">
+                                        Closed
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">
+                                        Open
+                                    </span>
+                                }
+
+                            </td>
+
+                            <td>
+
+                                <a asp-controller="Dashboard"
+                                   asp-action="Transactions"
+                                   asp-route-id="@bettingAccount.AccountId"
+                                   class="btn btn-sm btn-primary">
+
+                                    View Transactions
+
+                                </a>
+
+                            </td>
+
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+        }
+        else
+        {
+            <div class="alert alert-info">
+                You do not currently have any betting accounts.
+            </div>
+        }
+
+    </div>
+
+</div>

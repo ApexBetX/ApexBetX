@@ -1,4 +1,11 @@
 ﻿@using System.Text.Json
+@using Microsoft.AspNetCore.Http
+
+@{
+    var accountId = Context.Session.GetInt32("AccountId");
+    var email = Context.Session.GetString("Email");
+    var role = Context.Session.GetString("Role");
+}
 
 <!DOCTYPE html>
 <html lang="en">
@@ -6,8 +13,6 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - ApexBetX</title>
-
-    <script type="importmap"></script>
 
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
@@ -25,10 +30,7 @@
                 <button class="navbar-toggler"
                         type="button"
                         data-bs-toggle="collapse"
-                        data-bs-target="#mainNavbar"
-                        aria-controls="mainNavbar"
-                        aria-expanded="false"
-                        aria-label="Toggle navigation">
+                        data-bs-target="#mainNavbar">
                     <span class="navbar-toggler-icon"></span>
                 </button>
 
@@ -39,9 +41,19 @@
                             <a class="nav-link" asp-controller="Home" asp-action="Index">Home</a>
                         </li>
 
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="Users" asp-action="Index">Users</a>
-                        </li>
+                        @if (role == "Admin")
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Users" asp-action="Index">Users</a>
+                            </li>
+                        }
+
+                        @if (role == "User")
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Dashboard" asp-action="Index">My Account</a>
+                            </li>
+                        }
 
                         <li class="nav-item">
                             <a class="nav-link" asp-controller="Home" asp-action="About">About</a>
@@ -51,37 +63,51 @@
                             <a class="nav-link" asp-controller="Home" asp-action="Contact">Contact</a>
                         </li>
 
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle"
-                               href="#"
-                               id="profileDropdown"
-                               role="button"
-                               data-bs-toggle="dropdown"
-                               aria-expanded="false">
-                                <i class="bi bi-person-circle me-2"></i>
-                                Profile
-                            </a>
+                        @if (accountId == null)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Account" asp-action="Login">Login</a>
+                            </li>
 
-                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
-                                <li>
-                                    <a class="dropdown-item" asp-controller="Profile" asp-action="Index">My Profile</a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" asp-controller="Account" asp-action="Login">Login</a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" asp-controller="Account" asp-action="Register">Register</a>
-                                </li>
-                                <li><hr class="dropdown-divider" /></li>
-                                <li>
-                                    <a class="dropdown-item text-danger" asp-controller="Account" asp-action="Logout">Logout</a>
-                                </li>
-                            </ul>
-                        </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Account" asp-action="Register">Register</a>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle"
+                                   href="#"
+                                   id="profileDropdown"
+                                   role="button"
+                                   data-bs-toggle="dropdown"
+                                   aria-expanded="false">
+                                    <i class="bi bi-person-circle me-2"></i>
+                                    @email
+                                </a>
+
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+                                    <li>
+                                        <span class="dropdown-item-text">
+                                            Role: @role
+                                        </span>
+                                    </li>
+
+                                    <li><hr class="dropdown-divider" /></li>
+
+                                    <li>
+                                        <a class="dropdown-item text-danger"
+                                           asp-controller="Account"
+                                           asp-action="Logout">
+                                            Logout
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                        }
 
                     </ul>
                 </div>
-
             </div>
         </nav>
     </header>
@@ -103,52 +129,40 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
 
-    @if (TempData["Success"] != null)
-    {
-        <script>
-            Swal.fire({
-                icon: 'success',
-                title: 'Success',
-                text: @Html.Raw(JsonSerializer.Serialize(TempData["Success"])),
-                confirmButtonText: 'OK'
-            });
-        </script>
-    }
-
     @if (TempData["Error"] != null)
     {
         <script>
             Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: @Html.Raw(JsonSerializer.Serialize(TempData["Error"])),
-                confirmButtonText: 'OK'
+            icon: 'error',
+            title: 'Error',
+            text: @Html.Raw(JsonSerializer.Serialize(TempData["Error"])),
+            confirmButtonText: 'OK'
             });
         </script>
     }
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const deleteForms = document.querySelectorAll('.delete-form');
+        const deleteForms = document.querySelectorAll('.delete-form');
 
-            deleteForms.forEach(function (form) {
-                form.addEventListener('submit', function (event) {
-                    event.preventDefault();
+        deleteForms.forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+        event.preventDefault();
 
-                    Swal.fire({
-                        title: 'Are you sure?',
-                        text: 'This action cannot be undone.',
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonText: 'Yes, continue',
-                        cancelButtonText: 'Cancel'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            form.submit();
-                        }
-                    });
-                });
-            });
+        Swal.fire({
+        title: 'Are you sure?',
+        text: 'The record will be archived or deleted depending on the action.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, continue',
+        cancelButtonText: 'Cancel'
+        }).then((result) => {
+        if (result.isConfirmed) {
+        form.submit();
+        }
+        });
+        });
+        });
         });
     </script>
 

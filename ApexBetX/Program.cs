@@ -15,7 +15,9 @@ namespace ApexBetX
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(
             builder.Configuration.GetConnectionString("DefaultConnection")));
+            builder.Services.AddSession();
             builder.Services.AddScoped<UserService>();
+            builder.Services.AddScoped<EmailService>();
             builder.Services.AddScoped<AccountService>();
             builder.Services.AddScoped<TransactionService>();
 
@@ -31,6 +33,7 @@ namespace ApexBetX
 
             app.UseHttpsRedirection();
             app.UseRouting();
+            app.UseSession();
 
             app.UseAuthorization();
 

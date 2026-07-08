@@ -1,0 +1,80 @@
+﻿@model ApexBetX.Models.BettingAccount
+
+@{
+    ViewData["Title"] = "My Transactions";
+}
+
+<div class="container section">
+    <div class="card p-4">
+
+        <h1 class="page-title">My Transactions</h1>
+        <hr />
+
+        <p>
+            <strong>Account Number:</strong> @Model.AccountNumber
+        </p>
+
+        <p>
+            <strong>Balance:</strong> R @Model.Balance.ToString("N2")
+        </p>
+
+        @if (!Model.IsClosed)
+        {
+            <a asp-controller="Transactions"
+               asp-action="Create"
+               asp-route-accountId="@Model.AccountId"
+               class="btn btn-primary mb-3">
+                Add Transaction
+            </a>
+        }
+        else
+        {
+            <div class="alert alert-warning">
+                This account is closed. Transactions cannot be added.
+            </div>
+        }
+
+        <table class="table table-hover table-bordered align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Date</th>
+                    <th>Capture Date</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @if (Model.Transactions != null && Model.Transactions.Any())
+                {
+                    foreach (var transaction in Model.Transactions.OrderByDescending(t => t.TransactionDate))
+                    {
+                        <tr>
+                            <td>@transaction.TransactionDate.ToShortDateString()</td>
+                            <td>@transaction.CaptureDate.ToShortDateString()</td>
+                            <td>@transaction.TransactionType</td>
+                            <td>R @transaction.Amount.ToString("N2")</td>
+                            <td>@transaction.Description</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">
+                            No transactions found.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <a asp-controller="Dashboard"
+           asp-action="Index"
+           class="btn btn-secondary">
+            Back to My Account
+        </a>
+
+    </div>
+</div>

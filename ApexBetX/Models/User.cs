@@ -34,8 +34,10 @@ namespace ApexBetX.Models
         [Required(ErrorMessage = "Phone number is required.")]
         [Phone(ErrorMessage = "Please enter a valid phone number.")]
         public string? Phone { get; set; }
-
-        public ICollection<BettingAccount> BettingAccounts { get; set; } = new List<BettingAccount>();
         public bool IsArchived { get; set; } = false;
+        public int? AccountId { get; set; }
+        public Account? Account { get; set; }
+        public ICollection<BettingAccount> BettingAccounts { get; set; } = new List<BettingAccount>();        
+        
     }
 }

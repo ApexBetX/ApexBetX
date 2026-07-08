@@ -10,14 +10,17 @@ namespace ApexBetX.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly AccountService _accountService;
+        private readonly EmailService _emailService;
 
-        public BettingAccountsController(ApplicationDbContext context, AccountService accountService)
+
+        public BettingAccountsController(ApplicationDbContext context, AccountService accountService, EmailService emailService)
         {
             _context = context;
             _accountService = accountService;
+            _emailService = emailService;
         }
 
-        // GET: BettingAccounts/Create
+       
         public async Task<IActionResult> Create(int userId)
         {
             try
@@ -145,44 +148,64 @@ namespace ApexBetX.Controllers
                     return NotFound();
                 }
 
-                if (ModelState.IsValid)
+                ModelState.Remove("User");
+                ModelState.Remove("Transactions");
+
+                var account = await _context.BettingAccounts
+                    .Include(a => a.User)
+                        .ThenInclude(u => u.Account)
+                    .FirstOrDefaultAsync(a => a.AccountId == id);
+
+                if (account == null)
                 {
-                    var account = await _context.BettingAccounts.FindAsync(id);
+                    TempData["Error"] = "Betting account not found.";
+                    return RedirectToAction("Index", "Users");
+                }
 
-                    if (account == null)
-                    {
-                        TempData["Error"] = "Betting account not found.";
-                        return RedirectToAction("Index", "Users");
-                    }
-
-                    if (model.IsClosed && !_accountService.CanCloseAccount(account))
-                    {
-                        ModelState.AddModelError(
-                            "IsClosed",
-                            "An account can only be closed when the balance is zero.");
-
-                        return View(model);
-                    }
-
-
-                    account.AccountNumber = model.AccountNumber;
-                    account.IsClosed = model.IsClosed;
-                    account.UserId = model.UserId;
-
-                    // Balance is NOT updated here
-
-                    await _context.SaveChangesAsync();
-
-                    TempData["Success"] = "Betting account updated successfully.";
-
+                if (account.User == null || account.User.Account == null)
+                {
+                    TempData["Error"] = "The account owner does not have a linked login account.";
                     return RedirectToAction("Details", new { id = account.AccountId });
                 }
 
-                return View(model);
+                if (model.IsClosed && !_accountService.CanCloseAccount(account))
+                {
+                    ModelState.AddModelError(
+                        "IsClosed",
+                        "An account can only be closed when the balance is zero.");
+                }
+
+                if (!ModelState.IsValid)
+                {
+                    return View(model);
+                }
+
+                var token = Random.Shared.Next(100000, 1000000).ToString();
+
+                TempData["AccountEditData"] = System.Text.Json.JsonSerializer.Serialize(model);
+                TempData["AccountEditToken"] = token;
+                TempData["AccountEditTokenExpiry"] = DateTime.Now.AddMinutes(10).ToString("O");
+
+                await _emailService.SendEmailAsync(
+                    account.User.Account.Email,
+                    "ApexBetX Betting Account Update Verification",
+                                $"""
+                        A request has been made to update your ApexBetX betting account.
+
+                        Account Number: {account.AccountNumber}
+
+                        Verification code: {token}
+
+                        This code expires in 10 minutes.
+                        """);
+
+                TempData["Success"] = "A verification code was sent to the account owner's email.";
+
+                return RedirectToAction("VerifyEdit");
             }
             catch (Exception)
             {
-                TempData["Error"] = "An error occurred while updating the account.";
+                TempData["Error"] = "An error occurred while preparing the account update.";
                 return View(model);
             }
         }

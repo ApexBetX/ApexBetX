@@ -10,11 +10,14 @@ namespace ApexBetX.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly UserService _userService;
+        private readonly EmailService _emailService;
 
-        public UsersController(ApplicationDbContext context, UserService userService)
+        public UsersController(ApplicationDbContext context, UserService userService, EmailService emailService)
         {
             _context = context;
             _userService = userService;
+            _emailService = emailService;
+
         }
         public async Task<IActionResult> Index(string? searchTerm, int page = 1)
         {
@@ -26,8 +29,11 @@ namespace ApexBetX.Controllers
                 ViewBag.CurrentPage = page;
 
                 var users = _context.Users
+                    .Include(u => u.Account)
                     .Include(u => u.BettingAccounts)
-                    .Where(u => !u.IsArchived)
+                    .Where(u => !u.IsArchived &&
+                                u.Account != null &&
+                                u.Account.IsEmailVerified)
                     .AsQueryable();
 
                 if (!string.IsNullOrWhiteSpace(searchTerm))
@@ -69,25 +75,121 @@ namespace ApexBetX.Controllers
         {
             try
             {
+                ModelState.Remove("Account");
+                ModelState.Remove("BettingAccounts");
+
+                // Check duplicate ID Number
                 if (await _userService.IDNumberExistsAsync(user.IDNumber!))
                 {
-                    ModelState.AddModelError("IDNumber", "A user with this ID Number already exists.");
+                    ModelState.AddModelError(
+                        "IDNumber",
+                        "A user with this ID Number already exists.");
                 }
 
-                if (ModelState.IsValid)
+                // Check whether the email is already linked to another User
+                var existingAccount = await _context.Accounts
+                    .FirstOrDefaultAsync(a => a.Email == user.Email);
+
+                if (existingAccount != null)
                 {
-                    _context.Users.Add(user);
-                    await _context.SaveChangesAsync();
+                    var accountAlreadyLinked = await _context.Users
+                        .AnyAsync(u => u.AccountId == existingAccount.AccountId);
 
-                    TempData["Success"] = "User created successfully.";
-                    return RedirectToAction(nameof(Index));
+                    if (accountAlreadyLinked)
+                    {
+                        ModelState.AddModelError(
+                            "Email",
+                            "This login account is already linked to another user.");
+                    }
                 }
 
-                return View(user);
+                if (!ModelState.IsValid)
+                {
+                    return View(user);
+                }
+
+                Account account;
+                string? verificationToken = null;
+
+                // If the Account already exists, link it
+                if (existingAccount != null)
+                {
+                    account = existingAccount;
+                }
+                else
+                {
+                    // Generate verification token
+                    verificationToken =
+                        Random.Shared.Next(100000, 1000000).ToString();
+
+                    // Create login Account
+                    account = new Account
+                    {
+                        Email = user.Email!,
+                        Role = "User",
+
+                        IsEmailVerified = false,
+
+                        EmailVerificationToken = verificationToken,
+
+                        EmailVerificationTokenExpiry =
+                            DateTime.Now.AddMinutes(10),
+                        Password = BCrypt.Net.BCrypt.HashPassword(
+                            Guid.NewGuid().ToString())
+                    };
+
+                    _context.Accounts.Add(account);
+
+                    // Save first so AccountId is generated
+                    await _context.SaveChangesAsync();
+                }
+
+                // Link User to Account
+                user.AccountId = account.AccountId;
+
+                _context.Users.Add(user);
+
+                await _context.SaveChangesAsync();
+
+                // Only send verification email for newly-created Accounts
+                if (verificationToken != null)
+                {
+                    try
+                    {
+                        await _emailService.SendEmailAsync(
+                            account.Email,
+                            "Verify Your ApexBetX Account",
+                            $"""
+                            An ApexBetX account has been created for you.
+
+                            Your verification code is:
+
+                            {verificationToken}
+
+                            This verification code expires in 10 minutes.
+
+                            Please verify your email to activate your account.
+                            """);
+                    }
+                    catch (Exception)
+                    {
+                        TempData["Error"] =
+                            "The user was created, but the verification email could not be sent.";
+
+                        return RedirectToAction(nameof(Index));
+                    }
+                }
+
+                TempData["Success"] =
+                    "User created successfully. A verification code was sent to the user's email.";
+
+                return RedirectToAction("VerifyToken", "Account", new { email = account.Email });
             }
             catch (Exception)
             {
-                TempData["Error"] = "An error occurred while creating the user. Please try again.";
+                TempData["Error"] =
+                    "An error occurred while creating the user. Please try again.";
+
                 return View(user);
             }
         }

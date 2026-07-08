@@ -55,5 +55,14 @@ namespace ApexBetX.Services
 
             return currentBalance;
         }
+        public bool HasEnoughBalance(BettingAccount account, Transaction transaction)
+        {
+            if (transaction.TransactionType == "Withdrawal")
+            {
+                return account.Balance >= transaction.Amount;
+            }
+
+            return true;
+        }
     }
 }
