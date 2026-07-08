@@ -1,5 +1,9 @@
-﻿@{
+﻿@using Microsoft.AspNetCore.Http
+
+@{
     ViewData["Title"] = "Home";
+    var accountId = Context.Session.GetInt32("AccountId");
+    var role = Context.Session.GetString("Role");
 }
 
 <div class="container mt-5">
@@ -18,11 +22,30 @@
                     designed to help administrators manage users,
                     betting accounts and transactions efficiently.
                 </p>
-                <a asp-controller="Users"
-                   asp-action="Index"
-                   class="btn btn-primary btn-lg mt-3">
-                    Manage Users
-                </a>
+                @if (accountId == null)
+                {
+                    <a asp-controller="Account"
+                       asp-action="Login"
+                       class="btn btn-primary btn-lg mt-3">
+                        Manage Users
+                    </a>
+                }
+                else if (role == "Admin")
+                {
+                    <a asp-controller="Users"
+                       asp-action="Index"
+                       class="btn btn-primary btn-lg mt-3">
+                        Manage Users
+                    </a>
+                }
+                else
+                {
+                    <a asp-controller="Dashboard"
+                       asp-action="Index"
+                       class="btn btn-primary btn-lg mt-3">
+                        My Dashboard
+                    </a>
+                }
             </div>
 
             <div class="col-lg-6">

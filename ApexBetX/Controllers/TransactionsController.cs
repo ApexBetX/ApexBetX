@@ -1,7 +1,9 @@
 ﻿using ApexBetX.Data;
 using ApexBetX.Models;
 using ApexBetX.Services;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace ApexBetX.Controllers
 {
@@ -10,15 +12,12 @@ namespace ApexBetX.Controllers
         private readonly ApplicationDbContext _context;
         private readonly TransactionService _transactionService;
 
-        public TransactionsController(
-            ApplicationDbContext context,
-            TransactionService transactionService)
+        public TransactionsController(ApplicationDbContext context, TransactionService transactionService)
         {
             _context = context;
             _transactionService = transactionService;
         }
 
-        // GET: Transactions/Create
         public async Task<IActionResult> Create(int accountId)
         {
             try
@@ -59,15 +58,28 @@ namespace ApexBetX.Controllers
             }
         }
 
-        // POST: Transactions/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Transaction transaction)
         {
             try
             {
+                ModelState.Remove("BettingAccount");
+
+                var role = HttpContext.Session.GetString("Role");
+                var loginAccountId = HttpContext.Session.GetInt32("AccountId");
+
+                if (loginAccountId == null)
+                {
+                    TempData["Error"] = "Please login to add a transaction.";
+
+                    return RedirectToAction("Login", "Account");
+                }
+
                 var account = await _context.BettingAccounts
-                    .FindAsync(transaction.AccountId);
+                    .Include(b => b.User)
+                    .FirstOrDefaultAsync(b =>
+                        b.AccountId == transaction.AccountId);
 
                 if (account == null)
                 {
@@ -77,6 +89,28 @@ namespace ApexBetX.Controllers
                 }
                 else
                 {
+                    if (role == "Admin" && transaction.TransactionType == "Withdrawal")
+                    {
+                        ModelState.AddModelError(
+                            "TransactionType",
+                            "Admin users cannot make withdrawals from client accounts.");
+                    }
+
+
+                    if (role == "User")
+                    {
+                        if (account.User == null ||
+                            account.User.AccountId != loginAccountId)
+                        {
+                            TempData["Error"] =
+                                "You are not allowed to add transactions to this account.";
+
+                            return RedirectToAction(
+                                "Index",
+                                "Dashboard");
+                        }
+                    }
+
                     if (!_transactionService.CanAddTransaction(account))
                     {
                         ModelState.AddModelError(
@@ -92,21 +126,26 @@ namespace ApexBetX.Controllers
                             "Transaction date cannot be in the future.");
                     }
 
-                    if (!_transactionService.IsValidAmount(transaction.Amount))
+                    if (!_transactionService.IsValidAmount(
+                        transaction.Amount))
                     {
                         ModelState.AddModelError(
                             "Amount",
                             "Transaction amount cannot be zero.");
                     }
+
+                    if (!_transactionService.HasEnoughBalance(account, transaction))
+                    {
+                        ModelState.AddModelError(
+                            "Amount",
+                            "Withdrawal amount cannot be greater than the available balance.");
+                    }
                 }
 
                 if (ModelState.IsValid && account != null)
                 {
-                    // CaptureDate is controlled by the system
                     _transactionService.SetCaptureDate(transaction);
 
-                    // Credit increases balance
-                    // Debit decreases balance
                     account.Balance =
                         _transactionService.CalculateNewBalance(
                             account.Balance,
@@ -118,6 +157,15 @@ namespace ApexBetX.Controllers
 
                     TempData["Success"] =
                         "Transaction added successfully.";
+
+                    if (role == "User")
+                    {
+                        return RedirectToAction(
+                            "Transactions",
+                            "Dashboard",
+                            new { id = transaction.AccountId });
+                    }
+
 
                     return RedirectToAction(
                         "Details",
@@ -136,13 +184,12 @@ namespace ApexBetX.Controllers
             }
         }
 
-        // GET: Transactions/Edit/5
         public async Task<IActionResult> Edit(int id)
         {
             try
             {
-                var transaction =
-                    await _context.Transactions.FindAsync(id);
+                var transaction = await _context.Transactions.FindAsync(id);
+
 
                 if (transaction == null)
                 {
@@ -174,6 +221,7 @@ namespace ApexBetX.Controllers
                         new { id = account.AccountId });
                 }
 
+
                 return View(transaction);
             }
             catch (Exception)
@@ -191,6 +239,9 @@ namespace ApexBetX.Controllers
         {
             try
             {
+                var role = HttpContext.Session.GetString("Role");
+
+
                 ModelState.Remove("BettingAccount");
 
                 if (id != model.TransactionId)
@@ -231,7 +282,25 @@ namespace ApexBetX.Controllers
                     ModelState.AddModelError("Amount",
                         "Transaction amount cannot be zero.");
                 }
+                var balanceAfterReverse =
+                   _transactionService.ReverseTransaction(
+                       account.Balance,
+                       transaction);
 
+                if (role == "Admin" && transaction.TransactionType == "Withdrawal")
+                {
+                    ModelState.AddModelError(
+                        "TransactionType",
+                        "Admin users cannot make withdrawals from client accounts.");
+                }
+
+                if (model.TransactionType == "Withdrawal" &&
+                    model.Amount > balanceAfterReverse)
+                {
+                    ModelState.AddModelError(
+                        "Amount",
+                        "Withdrawal amount cannot be greater than the available balance.");
+                }
                 if (ModelState.IsValid)
                 {
                     var history = new TransactionHistory
