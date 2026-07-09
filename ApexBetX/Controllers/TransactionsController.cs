@@ -239,9 +239,6 @@ namespace ApexBetX.Controllers
         {
             try
             {
-                var role = HttpContext.Session.GetString("Role");
-
-
                 ModelState.Remove("BettingAccount");
 
                 if (id != model.TransactionId)
@@ -282,17 +279,10 @@ namespace ApexBetX.Controllers
                     ModelState.AddModelError("Amount",
                         "Transaction amount cannot be zero.");
                 }
-                var balanceAfterReverse =
-                   _transactionService.ReverseTransaction(
-                       account.Balance,
-                       transaction);
 
-                if (role == "Admin" && transaction.TransactionType == "Withdrawal")
-                {
-                    ModelState.AddModelError(
-                        "TransactionType",
-                        "Admin users cannot make withdrawals from client accounts.");
-                }
+                var balanceAfterReverse = _transactionService.ReverseTransaction(
+                    account.Balance,
+                    transaction);
 
                 if (model.TransactionType == "Withdrawal" &&
                     model.Amount > balanceAfterReverse)
@@ -301,6 +291,7 @@ namespace ApexBetX.Controllers
                         "Amount",
                         "Withdrawal amount cannot be greater than the available balance.");
                 }
+
                 if (ModelState.IsValid)
                 {
                     var history = new TransactionHistory
@@ -316,9 +307,7 @@ namespace ApexBetX.Controllers
 
                     _context.TransactionHistories.Add(history);
 
-                    account.Balance = _transactionService.ReverseTransaction(
-                        account.Balance,
-                        transaction);
+                    account.Balance = balanceAfterReverse;
 
                     transaction.TransactionDate = model.TransactionDate;
                     transaction.Amount = model.Amount;
@@ -333,7 +322,8 @@ namespace ApexBetX.Controllers
 
                     await _context.SaveChangesAsync();
 
-                    TempData["Success"] = "Transaction updated successfully. Previous transaction values were saved in history.";
+                    TempData["Success"] =
+                        "Transaction updated successfully. Previous transaction values were saved in history.";
 
                     return RedirectToAction("Details", "BettingAccounts",
                         new { id = transaction.AccountId });

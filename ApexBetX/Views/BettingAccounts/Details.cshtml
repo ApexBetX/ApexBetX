@@ -56,7 +56,7 @@
                asp-action="Create"
                asp-route-accountId="@Model.AccountId"
                class="btn btn-primary">
-                Add Transaction
+                Make Transaction
             </a>
         </div>
 
@@ -69,7 +69,6 @@
                     <th>Type</th>
                     <th>Amount</th>
                     <th>Description</th>
-                    <th class="text-center">Actions</th>
                 </tr>
             </thead>
 
@@ -85,14 +84,6 @@
                             <td>@transaction.TransactionType</td>
                             <td>R @transaction.Amount.ToString("N2")</td>
                             <td>@transaction.Description</td>
-                            <td class="text-center">
-                                <a asp-controller="Transactions"
-                                   asp-action="Edit"
-                                   asp-route-id="@transaction.TransactionId"
-                                   class="btn btn-sm btn-warning">
-                                    Edit
-                                </a>
-                            </td>
                         </tr>
                     }
                 }
