@@ -25,12 +25,24 @@ namespace ApexBetX.Controllers
         {
             try
             {
-                var user = await _context.Users.FindAsync(userId);
+                var user = await _context.Users
+                    .Include(u => u.Account)
+                    .FirstOrDefaultAsync(u => u.UserId == userId);
 
                 if (user == null)
                 {
-                    TempData["Error"] = "The selected user does not exist.";
+                    TempData["Error"] = "User not found.";
                     return RedirectToAction("Index", "Users");
+                }
+
+                if (user.Account == null || !user.Account.IsEmailVerified)
+                {
+                    TempData["Error"] = "The user must verify their account before a betting account can be created.";
+                    
+        return RedirectToAction(
+            "VerifyToken",
+            "Account",
+            new { email = user.Email });
                 }
 
                 var account = new BettingAccount
@@ -50,44 +62,70 @@ namespace ApexBetX.Controllers
             }
         }
 
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(BettingAccount account)
         {
             try
             {
-                if (!_context.Users.Any(u => u.UserId == account.UserId))
+                var user = await _context.Users
+                    .Include(u => u.Account)
+                    .FirstOrDefaultAsync(u => u.UserId == account.UserId);
+
+                if (user == null)
                 {
-                    ModelState.AddModelError("", "User does not exist.");
+                    ModelState.AddModelError("", "User not found.");
+                }
+                else if (user.Account == null || !user.Account.IsEmailVerified)
+                {
+                    ModelState.AddModelError("", "The user must verify their account before a betting account can be created.");
                 }
 
                 if (await _accountService.AccountNumberExistsAsync(account.AccountNumber!))
                 {
-                    ModelState.AddModelError(
-                        "AccountNumber",
-                        "An account with this account number already exists.");
+                    ModelState.AddModelError("AccountNumber", "An account with this account number already exists.");
                 }
 
-                if (ModelState.IsValid)
+                if (!ModelState.IsValid)
                 {
-                    account.CreatedDate = DateTime.Now;
-                    account.Balance = 0;
-                    account.IsClosed = false;
-
-                    _context.BettingAccounts.Add(account);
-                    await _context.SaveChangesAsync();
-
-                    TempData["Success"] = "Betting account created successfully.";
-
-                    return RedirectToAction("Details", "Users",
-                        new { id = account.UserId });
+                    return View(account);
                 }
 
-                return View(account);
+                account.CreatedDate = DateTime.Now;
+                account.Balance = 0;
+                account.IsClosed = false;
+
+                var token = Random.Shared.Next(100000, 1000000).ToString();
+
+                TempData["PendingBettingAccount"] =
+                    System.Text.Json.JsonSerializer.Serialize(account);
+
+                TempData["BettingAccountCreateToken"] = token;
+
+                TempData["BettingAccountCreateTokenExpiry"] =
+                    DateTime.Now.AddMinutes(10).ToString("O");
+
+                await _emailService.SendEmailAsync(
+                    user.Account.Email,
+                    "ApexBetX Betting Account Creation Verification",
+                    $"""
+                    A request has been made to create a betting account for you.
+
+                    Account Number: {account.AccountNumber}
+
+                    Verification code: {token}
+
+                    This code expires in 10 minutes.
+                    """);
+
+                TempData["Success"] = "A verification code was sent to the user's email.";
+
+                return RedirectToAction("VerifyCreate");
             }
             catch (Exception)
             {
-                TempData["Error"] = "An error occurred while creating the betting account.";
+                TempData["Error"] = "An error occurred while preparing the betting account creation.";
                 return View(account);
             }
         }
@@ -136,78 +174,60 @@ namespace ApexBetX.Controllers
                 return RedirectToAction("Index", "Users");
             }
         }
+        public IActionResult VerifyCreate()
+        {
+            TempData.Keep("PendingBettingAccount");
+            TempData.Keep("BettingAccountCreateToken");
+            TempData.Keep("BettingAccountCreateTokenExpiry");
+
+            return View();
+        }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, BettingAccount model)
+        public async Task<IActionResult> VerifyCreate(string token)
         {
-            try
+            TempData.Keep("PendingBettingAccount");
+            TempData.Keep("BettingAccountCreateToken");
+            TempData.Keep("BettingAccountCreateTokenExpiry");
+
+            var savedData = TempData["PendingBettingAccount"]?.ToString();
+            var savedToken = TempData["BettingAccountCreateToken"]?.ToString();
+            var expiryText = TempData["BettingAccountCreateTokenExpiry"]?.ToString();
+
+            if (savedData == null || savedToken == null || expiryText == null)
             {
-                if (id != model.AccountId)
-                {
-                    return NotFound();
-                }
-
-                ModelState.Remove("User");
-                ModelState.Remove("Transactions");
-
-                var account = await _context.BettingAccounts
-                    .Include(a => a.User)
-                        .ThenInclude(u => u.Account)
-                    .FirstOrDefaultAsync(a => a.AccountId == id);
-
-                if (account == null)
-                {
-                    TempData["Error"] = "Betting account not found.";
-                    return RedirectToAction("Index", "Users");
-                }
-
-                if (account.User == null || account.User.Account == null)
-                {
-                    TempData["Error"] = "The account owner does not have a linked login account.";
-                    return RedirectToAction("Details", new { id = account.AccountId });
-                }
-
-                if (model.IsClosed && !_accountService.CanCloseAccount(account))
-                {
-                    ModelState.AddModelError(
-                        "IsClosed",
-                        "An account can only be closed when the balance is zero.");
-                }
-
-                if (!ModelState.IsValid)
-                {
-                    return View(model);
-                }
-
-                var token = Random.Shared.Next(100000, 1000000).ToString();
-
-                TempData["AccountEditData"] = System.Text.Json.JsonSerializer.Serialize(model);
-                TempData["AccountEditToken"] = token;
-                TempData["AccountEditTokenExpiry"] = DateTime.Now.AddMinutes(10).ToString("O");
-
-                await _emailService.SendEmailAsync(
-                    account.User.Account.Email,
-                    "ApexBetX Betting Account Update Verification",
-                                $"""
-                        A request has been made to update your ApexBetX betting account.
-
-                        Account Number: {account.AccountNumber}
-
-                        Verification code: {token}
-
-                        This code expires in 10 minutes.
-                        """);
-
-                TempData["Success"] = "A verification code was sent to the account owner's email.";
-
-                return RedirectToAction("VerifyEdit");
+                TempData["Error"] = "Verification session expired.";
+                return RedirectToAction("Index", "Users");
             }
-            catch (Exception)
+
+            if (DateTime.Parse(expiryText) < DateTime.Now)
             {
-                TempData["Error"] = "An error occurred while preparing the account update.";
-                return View(model);
+                TempData["Error"] = "Verification code has expired.";
+                return RedirectToAction("Index", "Users");
             }
+
+            if (token != savedToken)
+            {
+                ModelState.AddModelError("token", "Invalid verification code.");
+                return View();
+            }
+
+            var account = System.Text.Json.JsonSerializer
+                .Deserialize<BettingAccount>(savedData);
+
+            if (account == null)
+            {
+                TempData["Error"] = "Pending betting account data could not be loaded.";
+                return RedirectToAction("Index", "Users");
+            }
+
+            _context.BettingAccounts.Add(account);
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = "Betting account created successfully after verification.";
+
+            return RedirectToAction("Details", "Users", new { id = account.UserId });
         }
     }
 }

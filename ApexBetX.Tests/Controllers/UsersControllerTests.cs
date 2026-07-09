@@ -4,6 +4,7 @@ using ApexBetX.Models;
 using ApexBetX.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace ApexBetX.Tests.Controllers
 {
@@ -65,12 +66,32 @@ namespace ApexBetX.Tests.Controllers
             return context;
         }
 
+        private EmailService GetEmailService()
+        {
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+            { "SmtpSettings:Host", "smtp.test.com" },
+            { "SmtpSettings:Port", "587" },
+            { "SmtpSettings:Username", "test@test.com" },
+            { "SmtpSettings:Password", "testpassword" }
+                })
+                .Build();
+
+            return new EmailService(configuration);
+        }
+
         [Fact]
         public async Task Index_Returns_View_With_All_Users_When_Search_Is_Empty()
         {
             var context = GetDbContext();
             var userService = new UserService(context);
-            var controller = new UsersController(context, userService);
+            var emailService = GetEmailService();
+
+            var controller = new UsersController(
+                context,
+                userService,
+                emailService);
 
             var result = await controller.Index(null);
 
@@ -85,7 +106,12 @@ namespace ApexBetX.Tests.Controllers
         {
             var context = GetDbContext();
             var userService = new UserService(context);
-            var controller = new UsersController(context, userService);
+            var emailService = GetEmailService();
+
+            var controller = new UsersController(
+                context,
+                userService,
+                emailService);
 
             var result = await controller.Index("0101015009087");
 
@@ -101,7 +127,12 @@ namespace ApexBetX.Tests.Controllers
         {
             var context = GetDbContext();
             var userService = new UserService(context);
-            var controller = new UsersController(context, userService);
+            var emailService = GetEmailService();
+
+            var controller = new UsersController(
+                context,
+                userService,
+                emailService);
 
             var result = await controller.Index("Smith");
 
@@ -117,7 +148,12 @@ namespace ApexBetX.Tests.Controllers
         {
             var context = GetDbContext();
             var userService = new UserService(context);
-            var controller = new UsersController(context, userService);
+            var emailService = GetEmailService();
+
+            var controller = new UsersController(
+                context,
+                userService,
+                emailService);
 
             var result = await controller.Index("ACC001");
 
@@ -133,7 +169,12 @@ namespace ApexBetX.Tests.Controllers
         {
             var context = GetDbContext();
             var userService = new UserService(context);
-            var controller = new UsersController(context, userService);
+            var emailService = GetEmailService();
+
+            var controller = new UsersController(
+                context,
+                userService,
+                emailService);
 
             var result = await controller.Index("NotFound");
 

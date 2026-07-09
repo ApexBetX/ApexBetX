@@ -69,6 +69,7 @@ namespace ApexBetX.Controllers
         {
             return View();
         }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(User user)
@@ -78,7 +79,6 @@ namespace ApexBetX.Controllers
                 ModelState.Remove("Account");
                 ModelState.Remove("BettingAccounts");
 
-                // Check duplicate ID Number
                 if (await _userService.IDNumberExistsAsync(user.IDNumber!))
                 {
                     ModelState.AddModelError(
@@ -86,7 +86,6 @@ namespace ApexBetX.Controllers
                         "A user with this ID Number already exists.");
                 }
 
-                // Check whether the email is already linked to another User
                 var existingAccount = await _context.Accounts
                     .FirstOrDefaultAsync(a => a.Email == user.Email);
 
@@ -108,76 +107,64 @@ namespace ApexBetX.Controllers
                     return View(user);
                 }
 
-                Account account;
-                string? verificationToken = null;
+                var verificationToken =
+                    Random.Shared.Next(100000, 1000000).ToString();
 
-                // If the Account already exists, link it
+                Account account;
+
                 if (existingAccount != null)
                 {
                     account = existingAccount;
+
+                    account.IsEmailVerified = false;
+                    account.EmailVerificationToken = verificationToken;
+                    account.EmailVerificationTokenExpiry = DateTime.Now.AddMinutes(10);
                 }
                 else
                 {
-                    // Generate verification token
-                    verificationToken =
-                        Random.Shared.Next(100000, 1000000).ToString();
-
-                    // Create login Account
                     account = new Account
                     {
                         Email = user.Email!,
                         Role = "User",
-
                         IsEmailVerified = false,
-
                         EmailVerificationToken = verificationToken,
-
-                        EmailVerificationTokenExpiry =
-                            DateTime.Now.AddMinutes(10),
-                        Password = BCrypt.Net.BCrypt.HashPassword(
-                            Guid.NewGuid().ToString())
+                        EmailVerificationTokenExpiry = DateTime.Now.AddMinutes(10),
+                        Password = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString())
                     };
 
                     _context.Accounts.Add(account);
-
-                    // Save first so AccountId is generated
-                    await _context.SaveChangesAsync();
                 }
-
-                // Link User to Account
-                user.AccountId = account.AccountId;
-
-                _context.Users.Add(user);
 
                 await _context.SaveChangesAsync();
 
-                // Only send verification email for newly-created Accounts
-                if (verificationToken != null)
+                user.AccountId = account.AccountId;
+
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
+
+                try
                 {
-                    try
-                    {
-                        await _emailService.SendEmailAsync(
-                            account.Email,
-                            "Verify Your ApexBetX Account",
-                            $"""
-                            An ApexBetX account has been created for you.
+                    await _emailService.SendEmailAsync(
+                        account.Email,
+                        "Verify Your ApexBetX Account",
+                        $"""
+                An ApexBetX account has been created for you.
 
-                            Your verification code is:
+                Your verification code is:
 
-                            {verificationToken}
+                {verificationToken}
 
-                            This verification code expires in 10 minutes.
+                This verification code expires in 10 minutes.
 
-                            Please verify your email to activate your account.
-                            """);
-                    }
-                    catch (Exception)
-                    {
-                        TempData["Error"] =
-                            "The user was created, but the verification email could not be sent.";
+                Please verify your email to activate your account.
+                """);
+                }
+                catch (Exception)
+                {
+                    TempData["Error"] =
+                        "The user was created, but the verification email could not be sent.";
 
-                        return RedirectToAction(nameof(Index));
-                    }
+                    return RedirectToAction(nameof(Index));
                 }
 
                 TempData["Success"] =
@@ -217,12 +204,13 @@ namespace ApexBetX.Controllers
             }
         }
 
-        // GET: Users/Edit/5
         public async Task<IActionResult> Edit(int id)
         {
             try
             {
-                var user = await _context.Users.FindAsync(id);
+                var user = await _context.Users
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(u => u.UserId == id);
 
                 if (user == null)
                 {
@@ -234,11 +222,13 @@ namespace ApexBetX.Controllers
             }
             catch (Exception)
             {
-                TempData["Error"] = "An error occurred while loading the user.";
+                TempData["Error"] =
+                    "An error occurred while loading the user.";
+
                 return RedirectToAction(nameof(Index));
             }
         }
-        // POST: Users/Edit/5
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, User user)
@@ -251,26 +241,50 @@ namespace ApexBetX.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
-                if (await _userService.DuplicateIDNumberExistsAsync(user.UserId, user.IDNumber!))
-                {
-                    ModelState.AddModelError("IDNumber",
-                        "A user with this ID Number already exists.");
-                }
+                // Get the EXISTING user from the database
+                var existingUser = await _context.Users
+                    .FirstOrDefaultAsync(u => u.UserId == id);
 
-                if (ModelState.IsValid)
+                if (existingUser == null)
                 {
-                    _context.Users.Update(user);
-                    await _context.SaveChangesAsync();
-
-                    TempData["Success"] = "User updated successfully.";
+                    TempData["Error"] = "User not found.";
                     return RedirectToAction(nameof(Index));
                 }
 
-                return View(user);
+                if (await _userService.DuplicateIDNumberExistsAsync(
+                    user.UserId,
+                    user.IDNumber!))
+                {
+                    ModelState.AddModelError(
+                        "IDNumber",
+                        "A user with this ID Number already exists.");
+                }
+
+                if (!ModelState.IsValid)
+                {
+                    return View(user);
+                }
+
+                existingUser.IDNumber = user.IDNumber;
+                existingUser.FirstName = user.FirstName;
+                existingUser.Surname = user.Surname;
+                existingUser.Email = user.Email;
+                existingUser.Phone = user.Phone;
+
+                await _context.SaveChangesAsync();
+
+                TempData["Success"] = "User updated successfully.";
+
+                return RedirectToAction(
+                    "Details",
+                    "Users",
+                    new { id = existingUser.UserId });
             }
             catch (Exception)
             {
-                TempData["Error"] = "An error occurred while updating the user.";
+                TempData["Error"] =
+                    "An error occurred while updating the user.";
+
                 return View(user);
             }
         }

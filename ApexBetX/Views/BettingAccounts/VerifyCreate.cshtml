@@ -1,0 +1,37 @@
+﻿@{
+    ViewData["Title"] = "Verify Betting Account Creation";
+}
+
+<div class="container section">
+    <div class="card p-4">
+
+        <h1 class="page-title">Verify Betting Account Creation</h1>
+        <hr />
+
+        <p>
+            A verification code was sent to the user's email.
+            Enter the code to confirm the betting account creation.
+        </p>
+
+        <form asp-action="VerifyCreate" method="post">
+            @Html.AntiForgeryToken()
+
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            <div class="mb-3">
+                <label class="form-label">Verification Code</label>
+                <input name="token" class="form-control" placeholder="Enter verification code" />
+                <span class="text-danger">@Html.ValidationMessage("token")</span>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                Confirm Create Account
+            </button>
+
+            <a asp-controller="Users" asp-action="Index" class="btn btn-secondary">
+                Cancel
+            </a>
+        </form>
+
+    </div>
+</div>
