@@ -78,13 +78,13 @@ namespace ApexBetX.Tests.Services
 
             var transaction = new Transaction
             {
-                Amount = 50,
-                TransactionType = "Credit"
+                Amount = 50m,
+                TransactionType = "Deposit"
             };
 
             var result = service.CalculateNewBalance(100, transaction);
 
-            Assert.Equal(150, result);
+            Assert.Equal(150m, result);
         }
 
         [Fact]
@@ -94,13 +94,13 @@ namespace ApexBetX.Tests.Services
 
             var transaction = new Transaction
             {
-                Amount = 30,
-                TransactionType = "Debit"
+                Amount = 30m,
+                TransactionType = "Withdrawal"
             };
 
             var result = service.CalculateNewBalance(100, transaction);
 
-            Assert.Equal(70, result);
+            Assert.Equal(70m, result);
         }
 
         [Fact]
@@ -113,13 +113,13 @@ namespace ApexBetX.Tests.Services
             var oldTransaction = new Transaction
             {
                 Amount = 100m,
-                TransactionType = "Credit"
+                TransactionType = "Deposit"
             };
 
             var newTransaction = new Transaction
             {
                 Amount = 150m,
-                TransactionType = "Credit"
+                TransactionType = "Deposit"
             };
 
             var balanceAfterReverse = service.ReverseTransaction(currentBalance, oldTransaction);
